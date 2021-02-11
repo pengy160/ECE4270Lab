@@ -307,6 +307,9 @@ void handle_instruction()
 {
 	/*IMPLEMENT THIS*/
 	/* execute one instruction at a time. Use/update CURRENT_STATE and and NEXT_STATE, as necessary.*/
+
+
+	//big test
 }
 
 
