@@ -307,7 +307,7 @@ void handle_instruction()
 {
 	/*IMPLEMENT THIS*/
 	/* execute one instruction at a time. Use/update CURRENT_STATE and and NEXT_STATE, as necessary.*/
-<<<<<<< HEAD
+
 	uint32_t instruction, opcode, rs, rt, immediate;
 // rd, sa, immediate, fucntion;
 	instruction = mem_read_32(CURRENT_STATE.PC);
@@ -324,11 +324,11 @@ void handle_instruction()
 	printf("RS: %x\n", rs);
 	printf("RS: %x\n", rt);
 	printf("immediate %x\n", immediate);
-=======
 
 
-	//big test
->>>>>>> e92f66f6cca8ba93067341ced70244728f18999b
+
+
+
 }
 
 
