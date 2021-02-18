@@ -307,15 +307,9 @@ void handle_instruction()
 {
 	/*IMPLEMENT THIS*/
 	/* execute one instruction at a time. Use/update CURRENT_STATE and and NEXT_STATE, as necessary.*/
-<<<<<<< HEAD
-
-	uint32_t instruction, opcode, rs, rt, immediate;
-// rd, sa, immediate, fucntion;
-=======
-	uint32_t instruction, opcode, rs, rt, rd, sa, immediate, function, target;
->>>>>>> 2c2447b4de0563f92fd1cec3d541e46ba8105228
+	uint32_t instruction, opcode, rs, rt, rd, sa, immediate, function, target, offset;
+	uint64_t product;
 	instruction = mem_read_32(CURRENT_STATE.PC);
-	printf("Instruction: %x\n",instruction);
 
 	NEXT_STATE.PC = CURRENT_STATE.PC + 4;
 	opcode = (instruction & 0xFC000000) >> 26;
@@ -325,53 +319,30 @@ void handle_instruction()
 	sa = (instruction & 0x7C0) >> 6;
 	immediate = (instruction & 0xFFFF);
 	function = (instruction & 0x3F);
-	target = (instruction & 0x3FFFFFF);
-	/*
-	printf("I- Type: \n");
-	printf("opcode: %x\n",opcode);
-	printf("RS: %x\n", rs);
-	printf("RT: %x\n", rt);
-	printf("immediate %x\n", immediate);
-<<<<<<< HEAD
-
-
-
-
-
-=======
-	printf("\nJ- Type: \n");
-	printf("opcode: %x\n",opcode);
-	printf("Target: %x\n", target);
-	printf("\nR-Type: \n");
-	printf("RS: %x\n", rs);
-        printf("RT: %x\n", rt);
-	printf("RD: %x\n", rd);
-	printf("SA: %x\n", sa);
-	printf("function: %x\n", function);
-	printf("\n");
-	*/
+	offset = (instruction & 0x3FFFFFF);
+	
 	if(opcode == 0x00){
 	
 		switch(function){
 			
 			case 0x0C:
+				//syscall
 				RUN_FLAG = FALSE;
 				print_instruction(CURRENT_STATE.PC);
 				break;
 			case 0x20:
+				//add
 				NEXT_STATE.REGS[rd] = CURRENT_STATE.REGS[rs] + CURRENT_STATE.REGS[rt];
 				print_instruction(CURRENT_STATE.PC);
 				break;
 			case 0x21:
 				//addu
+				NEXT_STATE.REGS[rd] = CURRENT_STATE.REGS[rs] + CURRENT_STATE.REGS[rt];
 				print_instruction(CURRENT_STATE.PC);
 				break;
 			case 0x22:
 				//sub
 				NEXT_STATE.REGS[rd] = CURRENT_STATE.REGS[rs] - CURRENT_STATE.REGS[rt];
-				/*if(overflow){
-					then do this	
-				}*/
 				print_instruction(CURRENT_STATE.PC);
 				break;
 			case 0x23:
@@ -381,32 +352,33 @@ void handle_instruction()
 				break;
 			case 0x18:
 				//mult
-				NEXT_STATE.REGS[rd] = CURRENT_STATE.REGS[rs] * CURRENT_STATE.REGS[rt];
-				/*if(overflow){
-					do this
-				}*/
+				product = CURRENT_STATE.REGS[rs] * CURRENT_STATE.REGS[rt];
+				NEXT_STATE.HI = product >> 32;
+				NEXT_STATE.LO = product & 0xFFFFFFFF;
 				print_instruction(CURRENT_STATE.PC);
 				break;
 			case 0x19:
 				//multu 
-				NEXT_STATE.REGS[rd] = CURRENT_STATE.REGS[rs] * CURRENT_STATE.REGS[rt];
+				product = CURRENT_STATE.REGS[rs] * CURRENT_STATE.REGS[rt];
+				NEXT_STATE.HI = product >> 32;
+				NEXT_STATE.LO = product & 0xFFFFFFFF;
 				print_instruction(CURRENT_STATE.PC);
 				break;
 			case 0x1A:
 				//div
-				NEXT_STATE.REGS[rd] = CURRENT_STATE.REGS[rs] / CURRENT_STATE.REGS[rt];
-				/*if(overflow){
-					then this
-				}*/
+				NEXT_STATE.LO = CURRENT_STATE.REGS[rs] / CURRENT_STATE.REGS[rt];
+				NEXT_STATE.HI = CURRENT_STATE.REGS[rs] % CURRENT_STATE.REGS[rt];
 				print_instruction(CURRENT_STATE.PC);
 				break;
 			case 0x1B:
 				//divu
-				NEXT_STATE.REGS[rd] = CURRENT_STATE.REGS[rs] / CURRENT_STATE.REGS[rt];
+				NEXT_STATE.LO = CURRENT_STATE.REGS[rs] / CURRENT_STATE.REGS[rt];
+				NEXT_STATE.HI = CURRENT_STATE.REGS[rs] % CURRENT_STATE.REGS[rt];
 				print_instruction(CURRENT_STATE.PC);
 				break;
 			case 0x24:
 				//and
+				NEXT_STATE.REGS[rd] = CURRENT_STATE.REGS[rs] & CURRENT_STATE.REGS[rt];
 				print_instruction(CURRENT_STATE.PC);
 				break;
 			case 0x25:
@@ -421,33 +393,63 @@ void handle_instruction()
 				break;
 			case 0x27:
 				//nor
-				NEXT_STATE.REGS[rd] = CURRENT_STATE.REGS[rs] !| CURRENT_STATE.REGS[rt];
-				// ^^^ dont know if this is actually a thing ^^^
+				NEXT_STATE.REGS[rd] = ~(CURRENT_STATE.REGS[rs] | CURRENT_STATE.REGS[rt]);
 				print_instruction(CURRENT_STATE.PC);
 				break;
 			case 0x2A:
 				//slt
+				if(CURRENT_STATE.REGS[rs] < CURRENT_STATE.REGS[rt]){
+					NEXT_STATE.REGS[rd] = 0x00000001;
+				}
+				else{
+					NEXT_STATE.REGS[rd] = 0x00000000;
+				}
 				print_instruction(CURRENT_STATE.PC);
 				break;
 			case 0x00:
 				//sll
+				NEXT_STATE.REGS[rd] = CURRENT_STATE.REGS[rt] << sa;
 				print_instruction(CURRENT_STATE.PC);
 				break;
 			case 0x02:
 				//srl
+				NEXT_STATE.REGS[rd] = CURRENT_STATE.REGS[rt] >> sa;
 				print_instruction(CURRENT_STATE.PC);
 				break;
 			case 0x03:
 				//sra
+				NEXT_STATE.REGS[rd] = CURRENT_STATE.REGS[rt] >> sa;
 				print_instruction(CURRENT_STATE.PC);
 				break;
 			case 0x08:
 				//jr
+				NEXT_STATE.PC = CURRENT_STATE.REGS[rs];
 				print_instruction(CURRENT_STATE.PC);
 				break;
 			case 0x09:
 				//jalr
-				
+				NEXT_STATE.REGS[rd] = CURRENT_STATE.PC + 4;
+				NEXT_STATE.PC = CURRENT_STATE.REGS[rs];
+				print_instruction(CURRENT_STATE.PC);
+				break;
+			case 0x10:
+				//mfhi
+				NEXT_STATE.REGS[rd] = CURRENT_STATE.HI;
+				print_instruction(CURRENT_STATE.PC);
+				break;
+			case 0x11:
+				//mthi
+				NEXT_STATE.HI = CURRENT_STATE.REGS[rs];
+				print_instruction(CURRENT_STATE.PC);
+				break;
+			case 0x12:
+				//mflo
+				NEXT_STATE.REGS[rd] = CURRENT_STATE.LO;
+				print_instruction(CURRENT_STATE.PC);
+				break;
+			case 0x13:
+				//mtlo
+				NEXT_STATE.LO = CURRENT_STATE.REGS[rs];
 				print_instruction(CURRENT_STATE.PC);
 				break;
 
@@ -456,101 +458,128 @@ void handle_instruction()
 	}
 	else{
 		switch(opcode){
+			case 0x01:
+							//confused
+				print_instruction(CURRENT_STATE.PC);
+				break;
 			case 0x02:
 				//j
+				target = offset << 2;
+				NEXT_STATE.PC = ((CURRENT_STATE.PC >> 28) << 28) + target;
 				print_instruction(CURRENT_STATE.PC);
 				break;
 			case 0x03:
 				//jal
+				target = offset << 2;
+				NEXT_STATE.PC = ((CURRENT_STATE.PC >> 28) << 28) + target;
+				NEXT_STATE.REGS[31] = CURRENT_STATE.PC + 4;
 				print_instruction(CURRENT_STATE.PC);
 				break;
 			case 0x04:
 				//beq
+				target = ((int32_t)((int16_t)immediate)) << 2;
+				if (CURRENT_STATE.REGS[rs] == CURRENT_STATE.REGS[rt]){
+					NEXT_STATE.PC = CURRENT_STATE.PC + target;
+				}
 				print_instruction(CURRENT_STATE.PC);
 				break;
 			case 0x05:
 				//bne
+				target = ((int32_t)((int16_t)immediate)) << 2;
+				if (CURRENT_STATE.REGS[rs] != CURRENT_STATE.REGS[rt]){
+					NEXT_STATE.PC = CURRENT_STATE.PC + target;
+				}
 				print_instruction(CURRENT_STATE.PC);
 				break;
 			case 0x06:
 				//blez
+				target = ((int32_t)((int16_t)immediate)) << 2;
+				if (((int32_t)CURRENT_STATE.REGS[rs]) <= 0){
+					NEXT_STATE.PC = CURRENT_STATE.PC + target;
+				}
 				print_instruction(CURRENT_STATE.PC);
 				break;
 			case 0x07:
 				//bgtz
+				target = ((int32_t)((int16_t)immediate)) << 2;
+				if (((int32_t)CURRENT_STATE.REGS[rs]) > 0){
+					NEXT_STATE.PC = CURRENT_STATE.PC + target;
+				}
 				print_instruction(CURRENT_STATE.PC);
 				break;
 			case 0x08:
 				//ADDI
+				NEXT_STATE.REGS[rt] = CURRENT_STATE.REGS[rs] + (int32_t)((int16_t)immediate);
 				print_instruction(CURRENT_STATE.PC);
 				break;
 			case 0x09:
 				//ADDIU
+				NEXT_STATE.REGS[rt] = CURRENT_STATE.REGS[rs] + (uint32_t)((uint16_t)immediate);
 				print_instruction(CURRENT_STATE.PC);
 				break;
 			case 0x0C:
 				//ANDI
+				NEXT_STATE.REGS[rt] = immediate & CURRENT_STATE.REGS[rs] & 0xFFFF;
 				print_instruction(CURRENT_STATE.PC);
 				break;
 			case 0x0D:
 				//ori
+				NEXT_STATE.REGS[rt] = CURRENT_STATE.REGS[rs] | (uint32_t)((uint16_t)immediate);
 				print_instruction(CURRENT_STATE.PC);
 				break;
 			case 0x0E:
 				//xori
+				NEXT_STATE.REGS[rt] = CURRENT_STATE.REGS[rs] ^ (uint32_t)((uint16_t)immediate);
 				print_instruction(CURRENT_STATE.PC);
 				break;
 			case 0x0A:
 				//slti
-				print_instruction(CURRENT_STATE.PC);
-				break;
-			case 0x10:
-				//mfhi
-				print_instruction(CURRENT_STATE.PC);
-				break;
-			case 0x11:
-				//mthi
-				print_instruction(CURRENT_STATE.PC);
-				break;
-			case 0x12:
-				//mflo
-				print_instruction(CURRENT_STATE.PC);
-				break;
-			case 0x13:
-				//mtlo
+				if(CURRENT_STATE.REGS[rs] < (int32_t)((int16_t)immediate)){
+					NEXT_STATE.REGS[rt] = 0x00000001;
+				}
+				else{
+					NEXT_STATE.REGS[rt] = 0x00000000;
+				}
 				print_instruction(CURRENT_STATE.PC);
 				break;
 			case 0x20:
                                 //lb
+								//confused
 				print_instruction(CURRENT_STATE.PC);
                                 break;
 			case 0x23:
                                 //lw
+				target = ((uint32_t)((uint16_t)immediate)) + CURRENT_STATE.REGS[rs];
+				NEXT_STATE.REGS[rt] = mem_read_32(target);
 				print_instruction(CURRENT_STATE.PC);
                                 break;
                         case 0x21:
                                 //lh
+								//confused
 				print_instruction(CURRENT_STATE.PC);
                                 break;
 			case 0x2B:
                                 //sw
+								//confused
 				print_instruction(CURRENT_STATE.PC);
                                 break;
                         case 0x28:
                                 //sb
+								//confused
 				print_instruction(CURRENT_STATE.PC);
                                 break;
                         case 0x29:
                                 //sh
+								//confused
 				print_instruction(CURRENT_STATE.PC);
                                 break;
 			case 0x0F:
                                 //lui
+				NEXT_STATE.REGS[rt] = ((uint32_t)immediate) << 16;
 				print_instruction(CURRENT_STATE.PC);
                                 break;		
 		}
 	}
->>>>>>> 2c2447b4de0563f92fd1cec3d541e46ba8105228
 }
 
 
@@ -583,7 +612,7 @@ void print_program(){
 /************************************************************/
 void print_instruction(uint32_t addr){
 	/*IMPLEMENT THIS*/
-	uint32_t instruction, opcode, rs, rt, rd, sa, immediate, function, target;
+	uint32_t instruction, opcode, rs, rt, rd, sa, immediate, function, target, offset;
 	
 	instruction = mem_read_32(addr);
 
@@ -594,409 +623,162 @@ void print_instruction(uint32_t addr){
         sa = (instruction & 0x7C0) >> 6;
         immediate = (instruction & 0xFFFF);
         function = (instruction & 0x3F);
-        target = (instruction & 0x3FFFFFF);
+        offset = (instruction & 0x3FFFFFF);
 
 	//printf("From print: %x", instruction);
-	
-	char RT[10];
-	char RS[10];
-	char RD[10];
-	
-		switch(rd){
-			case 0x00:
-				strcpy(RS, "zero");
-				break;
-			case 0x02:
-                                strcpy(RD, "v0");
-                                break;
-                        case 0x03:
-				strcpy(RD, "v1");
-                                break;
-                        case 0x04:
-                                strcpy(RD, "a0");
-                                break;
-                        case 0x05:
-				strcpy(RD, "a1");
-                                break;
-                        case 0x06:
-				strcpy(RD, "a2");
-                                break;
-                        case 0x07:
-                                strcpy(RD, "a3");
-                                break;
-			case 0x08:
-                                strcpy(RD, "t0");
-                                break;
-                        case 0x09:
-                                strcpy(RD, "t1");
-                                break;
-                        case 0x0A:
-                                strcpy(RD, "t2");
-                                break;
-                        case 0x0B:
-                                strcpy(RD, "t3");
-                                break;
-			case 0x0C:
-                                strcpy(RD, "t4");
-                                break;
-                        case 0x0D:
-                                strcpy(RD, "t5");
-                                break;
-                        case 0x0E:
-                                strcpy(RD, "t6");
-                                break;
-                        case 0x0F:
-                                strcpy(RD, "t7");
-                                break;
-                        case 0x10:
-                                strcpy(RD, "s0");
-                                break;
-                        case 0x11:
-                                strcpy(RD, "s1");
-                                break;
-                        case 0x12:
-                                strcpy(RD, "s2");
-                                break;
-                        case 0x13:
-                                strcpy(RD, "s3");
-                                break;
-			case 0x14:
-                                strcpy(RD, "s4");
-                                break;
-                        case 0x15:
-                                strcpy(RD, "s5");
-                                break;
-                        case 0x16:
-                                strcpy(RD, "s6");
-                                break;
-                        case 0x17:
-                                strcpy(RD, "s7");
-                                break;
-                        case 0x18:
-                                strcpy(RD, "t8");
-                                break;
-                        case 0x19:
-                                strcpy(RD, "t9");
-                                break;
-                        case 0x1A:
-                                strcpy(RD, "k0");
-                                break;
-                        case 0x1B:
-                                strcpy(RD, "k1");
-                                break;
-                }
-	
-		switch(rs){
-			case 0x00:
-				strcpy(RS, "zero");
-				break;
-			case 0x02:
-                                strcpy(RS, "v0");
-                                break;
-                        case 0x03:
-				strcpy(RS, "v1");
-                                break;
-                        case 0x04:
-                                strcpy(RS, "a0");
-                                break;
-                        case 0x05:
-				strcpy(RS, "a1");
-                                break;
-                        case 0x06:
-				strcpy(RS, "a2");
-                                break;
-                        case 0x07:
-                                strcpy(RS, "a3");
-                                break;
-			case 0x08:
-                                strcpy(RS, "t0");
-                                break;
-                        case 0x09:
-                                strcpy(RS, "t1");
-                                break;
-                        case 0x0A:
-                                strcpy(RS, "t2");
-                                break;
-                        case 0x0B:
-                                strcpy(RS, "t3");
-                                break;
-			case 0x0C:
-                                strcpy(RS, "t4");
-                                break;
-                        case 0x0D:
-                                strcpy(RS, "t5");
-                                break;
-                        case 0x0E:
-                                strcpy(RS, "t6");
-                                break;
-                        case 0x0F:
-                                strcpy(RS, "t7");
-                                break;
-                        case 0x10:
-                                strcpy(RS, "s0");
-                                break;
-                        case 0x11:
-                                strcpy(RS, "s1");
-                                break;
-                        case 0x12:
-                                strcpy(RS, "s2");
-                                break;
-                        case 0x13:
-                                strcpy(RS, "s3");
-                                break;
-			case 0x14:
-                                strcpy(RS, "s4");
-                                break;
-                        case 0x15:
-                                strcpy(RS, "s5");
-                                break;
-                        case 0x16:
-                                strcpy(RS, "s6");
-                                break;
-                        case 0x17:
-                                strcpy(RS, "s7");
-                                break;
-                        case 0x18:
-                                strcpy(RS, "t8");
-                                break;
-                        case 0x19:
-                                strcpy(RS, "t9");
-                                break;
-                        case 0x1A:
-                                strcpy(RS, "k0");
-                                break;
-                        case 0x1B:
-                                strcpy(RS, "k1");
-                                break;
-                }
-	
-		switch(rt){
-			case 0x00:
-				strcpy(RS, "zero");
-				break;
-			case 0x02:
-                                strcpy(RT, "v0");
-                                break;
-                        case 0x03:
-				strcpy(RT, "v1");
-                                break;
-                        case 0x04:
-                                strcpy(RT, "a0");
-                                break;
-                        case 0x05:
-				strcpy(RT, "a1");
-                                break;
-                        case 0x06:
-				strcpy(RT, "a2");
-                                break;
-                        case 0x07:
-                                strcpy(RT, "a3");
-                                break;
-			case 0x08:
-                                strcpy(RT, "t0");
-                                break;
-                        case 0x09:
-                                strcpy(RT, "t1");
-                                break;
-                        case 0x0A:
-                                strcpy(RT, "t2");
-                                break;
-                        case 0x0B:
-                                strcpy(RT, "t3");
-                                break;
-			case 0x0C:
-                                strcpy(RT, "t4");
-                                break;
-                        case 0x0D:
-                                strcpy(RT, "t5");
-                                break;
-                        case 0x0E:
-                                strcpy(RT, "t6");
-                                break;
-                        case 0x0F:
-                                strcpy(RT, "t7");
-                                break;
-                        case 0x10:
-                                strcpy(RT, "s0");
-                                break;
-                        case 0x11:
-                                strcpy(RT, "s1");
-                                break;
-                        case 0x12:
-                                strcpy(RT, "s2");
-                                break;
-                        case 0x13:
-                                strcpy(RT, "s3");
-                                break;
-			case 0x14:
-                                strcpy(RT, "s4");
-                                break;
-                        case 0x15:
-                                strcpy(RT, "s5");
-                                break;
-                        case 0x16:
-                                strcpy(RT, "s6");
-                                break;
-                        case 0x17:
-                                strcpy(RT, "s7");
-                                break;
-                        case 0x18:
-                                strcpy(RT, "t8");
-                                break;
-                        case 0x19:
-                                strcpy(RT, "t9");
-                                break;
-                        case 0x1A:
-                                strcpy(RT, "k0");
-                                break;
-                        case 0x1B:
-                                strcpy(RT, "k1");
-                                break;
-                }
-
 
 	if(opcode == 0x00){
 		switch(function){
 
                         case 0x0C:
                                 //syscall
+				printf("SYSCALL\n");
                                 break;
                         case 0x20:
                                 //add
                                 printf("\nADD  ");
-				printf("%s ", RD);
-				printf("%s ", RS);
-				printf("%s\n", RT);
+				printf("$%d ", rd);
+				printf("$%d ", rs);
+				printf("$%d\n", rt);
                                 break;
 			case 0x21:
                                 //addu
                                 printf("\nADD  ");
-				printf("%s ", RD);
-				printf("%s ", RS);
-				printf("%s\n", RT);
+				printf("$%d ", rd);
+				printf("$%d ", rs);
+				printf("$%d\n", rt);
                                 break;
 
                         case 0x22:
                                 //sub
 				printf("\nSUB  ");
-				printf("%s ", RD);
-				printf("%s ", RS);
-				printf("%s\n", RT);
-
+				printf("$%d ", rd);
+				printf("$%d ", rs);
+				printf("$%d\n", rt);
                                 break;
                         case 0x23:
                                 //subu
 				printf("\nSUBU  ");
-				printf("%s ", RD);
-				printf("%s ", RS);
-				printf("%s\n", RT);
-
+				printf("$%d ", rd);
+				printf("$%d ", rs);
+				printf("$%d\n", rt);
                                 break;
                         case 0x18:
                                 //mult
 				printf("\nMULT  ");
-				printf("%s ", RD);
-				printf("%s ", RS);
-				printf("%s\n", RT);
+				printf("$%d ", rs);
+				printf("$%d \n", rt);
 
                                 break;
                         case 0x19:
                                 //multu
 				printf("\nMULTU  ");
-				printf("%s ", RD);
-				printf("%s ", RS);
-				printf("%s\n", RT);
+				printf("$%d ", rs);
+				printf("$%d ", rt);
 
                                 break;
                         case 0x1A:
                                 //div
 				printf("\nDIV  ");
-				printf("%s ", RD);
-				printf("%s ", RS);
-				printf("%s\n", RT);
-
+				printf("$%d ", rs);
+				printf("$%d ", rt);
                                 break;
                         case 0x1B:
                                 //divu
 				printf("\nDIVU  ");
-				printf("%s ", RD);
-				printf("%s ", RS);
-				printf("%s\n", RT);
+				printf("$%d ", rs);
+				printf("$%d\n", rt);
                                 break;
                         case 0x24:
                                 //and
 				printf("\nAND  ");
-				printf("%s ", RD);
-				printf("%s ", RS);
-				printf("%s\n", RT);
+				printf("$%d ", rd);
+				printf("$%d ", rs);
+				printf("$%d\n", rt);
                                 break;
                         case 0x25:
                                 //or
 				printf("\nOR  ");
-				printf("%s ", RD);
-				printf("%s ", RS);
-				printf("%s\n", RT);
+				printf("$%d ", rd);
+				printf("$%d ", rs);
+				printf("$%d\n", rt);
                                 break;
                         case 0x26:
                                 //xor
 				printf("\nXOR  ");
-				printf("%s ", RD);
-				printf("%s ", RS);
-				printf("%s\n", RT);
+				printf("$%d ", rd);
+				printf("$%d ", rs);
+				printf("$%d\n", rt);
                                 break;
                         case 0x27:
                                 //nor
 				printf("\nNOR  ");
-				printf("%s ", RD);
-				printf("%s ", RS);
-				printf("%s\n", RT);
+				printf("$%d ", rd);
+				printf("$%d ", rs);
+				printf("$%d\n", rt);
                                 break;
                         case 0x2A:
                                 //slt
 				printf("\nSLT  ");
-				printf("%s ", RD);
-				printf("%s ", RS);
-				printf("%s\n", RT);
+				printf("$%d ", rd);
+				printf("$%d ", rs);
+				printf("$%d\n", rt);
                                 break;
                         case 0x00:
                                 //sll
 				printf("\nSLL  ");
-				printf("%s ", RD);
-				printf("%s ", RS);
-				printf("%s\n", RT);
+				printf("$%d ", rd);
+				printf("$%d ", rt);
+				printf("$%d\n", sa);
                                 break;
 			case 0x02:
                                 //srl
 				printf("\nSRL  ");
-				printf("%s ", RD);
-				printf("%s ", RS);
-				printf("%s\n", RT);
+				printf("$%d ", rd);
+				printf("$%d ", rt);
+				printf("$%d\n", sa);
                                 break;
                         case 0x03:
                                 //sra
 				printf("\nSRA  ");
-				printf("%s ", RD);
-				printf("%s ", RS);
-				printf("%s\n", RT);
+				printf("$%d ", rd);
+				printf("$%d ", rt);
+				printf("$%d\n", sa);
                                 break;
                         case 0x08:
                                 //jr
 				printf("\nJR  ");
-				printf("%s ", RD);
-				printf("%s ", RS);
-				printf("%s\n", RT);
+				printf("$%d\n", rs);
                                 break;
                         case 0x09:
                                  //jalr
 				printf("\nJALR  ");
-				printf("%s ", RD);
-				printf("%s ", RS);
-				printf("%s\n", RT);
+				printf("$%d \n", rs);
+				printf("JALR $%d ", rd);
+				printf("$%d\n", rs);
                                 break;
-
+			case 0x10:
+                                //mfhi
+				printf("\nMFHI  ");
+				printf("$%d \n", rd);
+                                break;
+                        case 0x11:
+                                //mthi
+				printf("\nMTHI  ");
+				printf("$%d \n", rs);
+                                break;
+                        case 0x12:
+                                //mflo
+				printf("\nMFLO  ");
+				printf("$%d \n", rd);
+                                break;
+                        case 0x13:
+                                //mtlo
+				printf("\nMTLO  ");
+				printf("$%d \n", rs);
+                                break;
                 }
-	                             
-printf("\n");           
+	                                      
 
         }
         else{
@@ -1004,167 +786,128 @@ printf("\n");
                         case 0x02:
 				//J
                                 printf("\nJ  ");
-				printf("0x%x\n", target);
+				printf("%d\n", offset);
                                 break;
                         case 0x03:
 				//JAL
                                 printf("\nJAL  ");
-				printf("0x%x\n", target);
+				printf("%d\n", offset);
                                 break;
                         case 0x04:
                                 //beq
 				printf("\nBEQ  ");
-				printf("%s ", RS);
-				printf("%s ", RT);
-				printf("0x%x\n", immediate);
+				printf("$%d ", rs);
+				printf("$%d ", rt);
+				printf("%d\n", immediate);
                                 break;
                         case 0x05:
                                 //bne
 				printf("\nBNE  ");
-				printf("%s ", RS);
-				printf("%s ", RT);
-				printf("0x%x\n", immediate);
+				printf("$%d ", rs);
+				printf("$%d ", rt);
+				printf("%d\n", immediate);
                                 break;
                         case 0x06:
                                 //blez
 				printf("\nBLEZ  ");
-				printf("%s ", RS);
-				printf("%s ", RT);
-				printf("0x%x\n", immediate);
+				printf("$%d ", rs);
+				printf("%d\n", immediate);
                                 break;
                         case 0x07:
                                 //bgtz
 				printf("\nBGTZ  ");
-				printf("%s ", RS);
-				printf("%s ", RT);
-				printf("0x%x\n", immediate);
+				printf("$%d ", rs);
+				printf("%d\n", immediate);
                                 break;
                         case 0x08:
                                 //ADDI
 				printf("\nADDI  ");
-				printf("%s ", RT);
-				printf("%s ", RS);
-				printf("0x%x\n", immediate);
+				printf("$%d ", rt);
+				printf("$%d ", rs);
+				printf("%d\n", immediate);
                                 break;
                         case 0x09:
                                 //ADDIU
 				printf("\nADDIU  ");
-				printf("%s ", RT);
-				printf("%s ", RS);
-				printf("0x%x\n", immediate);
+				printf("$%d ", rt);
+				printf("$%d ", rs);
+				printf("%d\n", immediate);
                                 break;
                         case 0x0C:
                                 //ANDI
 				printf("\nANDI  ");
-				printf("%s ", RT);
-				printf("%s ", RS);
-				printf("0x%x\n", immediate);
+				printf("$%d ", rt);
+				printf("$%d ", rs);
+				printf("%d\n", immediate);
                                 break;
                         case 0x0D:
                                 //ori
 				printf("\nORI  ");
-				printf("%s ", RT);
-				printf("%s ", RS);
-				printf("0x%x\n", immediate);
+				printf("$%d ", rt);
+				printf("$%d ", rs);
+				printf("%d\n", immediate);
                                 break;
                         case 0x0E:
                                 //xori
 				printf("\nXORI  ");
-				printf("%s ", RT);
-				printf("%s ", RS);
-				printf("0x%x\n", immediate);
+				printf("$%d ", rt);
+				printf("$%d ", rs);
+				printf("%d\n", immediate);
                                 break;
                         case 0x0A:
                                 //slti
 				printf("\nSLTI  ");
-				printf("%s ", RT);
-				printf("%s ", RS);
-				printf("0x%x\n", immediate);
-                                break;
-                        case 0x10:
-                                //mfhi
-				printf("\nMFHI  ");
-				printf("%s ", RS);
-				printf("%s ", RT);
-				printf("%s ", RD);
-				printf("0x%x", sa);
-				printf("0x%x\n", function);
-                                break;
-                        case 0x11:
-                                //mthi
-				printf("\nMTHI  ");
-				printf("%s ", RS);
-				printf("%s ", RT);
-				printf("%s ", RD);
-				printf("0x%x", sa);
-				printf("0x%x\n", function);
-                                break;
-                        case 0x12:
-                                //mflo
-				printf("\nMFLO  ");
-				printf("%s ", RS);
-				printf("%s ", RT);
-				printf("%s ", RD);
-				printf("0x%x", sa);
-				printf("0x%x\n", function);
-                                break;
-                        case 0x13:
-                                //mtlo
-				printf("\nMTLO  ");
-				printf("%s ", RS);
-				printf("%s ", RT);
-				printf("%s ", RD);
-				printf("0x%x", sa);
-				printf("0x%x\n", function);
+				printf("$%d ", rt);
+				printf("$%d ", rs);
+				printf("%d\n", immediate);
                                 break;
                         case 0x20:
                                 //lb
 				printf("\nLB  ");
-				printf("%s ", RT);
-				printf("0x%x ", immediate);
-				printf("%s \n", RS);
+				printf("$%d ", rt);
+				printf("%d ", immediate);
+				printf("$%d \n", rs);
 				break;
                         case 0x23:
                                 //lw
 				printf("\nLW  ");
-				printf("%s ", RT);
-				printf("0x%x ", immediate);
-				printf("%s \n", RS);
+				printf("$%d ", rt);
+				printf("%d ", immediate);
+				printf("$%d \n", rs);
                                 break;
                         case 0x21:
                                 //lh
 				printf("\nLH  ");
-				printf("%s ", RT);
-				printf("0x%x ", immediate);
-				printf("%s \n", RS);
+				printf("$%d ", rt);
+				printf("%d ", immediate);
+				printf("$%d \n", rs);
                                 break;
                         case 0x2B:
                                 //sw
 				printf("\nSW  ");
-				printf("%s ", RT);
-				printf("0x%x ", immediate);
-				printf("%s \n", RS);
+				printf("$%d ", rt);
+				printf("%d ", immediate);
+				printf("$%d \n", rs);
                                 break;
                         case 0x28:
                                 //sb
 				printf("\nSB  ");
-				printf("%s ", RT);
-				printf("%s ", RS);
-				printf("0x%x\n", immediate);
+				printf("$%d ", rt);
+				printf("%d ", immediate);
+				printf("$%d \n", rs);
                                 break;
                         case 0x29:
                                 //sh
 				printf("\nSH  ");
-				printf("%s ", RT);
-				printf("%s ", RS);
-				printf("0x%x\n", immediate);
+				printf("$%d ", rt);
+				printf("%d ", immediate);
+				printf("$%d\n", rs);
                                 break;
                         case 0x0F:
                                 //lui
 				printf("\nLUI  ");
-				printf("%s ", RT);
-				printf("%s ", RS);
-				printf("0x%x\n", immediate);
+				printf("$%d ", rt);
+				printf("%d\n", immediate);
                                 break;
                 }
         }
